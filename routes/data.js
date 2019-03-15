@@ -20,29 +20,29 @@ router.get('/current', function(req, res) {
   res.send('{"status":"ok"}');//TODO implement
 });
 
-//cars in, time param in min since epoch
-router.get('/in/:start/:end', function(req, res) {
+//cars in, time param in min since epoch, offset is number of mins since start time, can cache as this shouldn't change except most recent
+router.get('/in/:start/:offset', function(req, res) {
   res.write('{"status":"ok",');//TODO implement
   res.write('"start":' + req.params.start + ",");
-  res.write('"end":' + req.params.end + ",");
+  res.write('"offset":' + req.params.offset + ",");
   res.write('}');
   res.send();
 });
 
 //cars out, time param in hours
-router.get('/out/:start/:end', function(req, res) {
+router.get('/out/:start/:offset', function(req, res) {
   res.write('{"status":"ok",');//TODO implement
   res.write('"start":' + req.params.start + ",");
-  res.write('"end":' + req.params.end + ",");
+  res.write('"offset":' + req.params.offset + ",");
   res.write('}');
   res.send();
 });
 
 //cars throughput, time param in hours
-router.get('/thru/:start/:end', function(req, res) {
+router.get('/thru/:start/:offset', function(req, res) {
   res.write('{"status":"ok",');//TODO implement
   res.write('"start":' + req.params.start + ",");
-  res.write('"end":' + req.params.end + ",");
+  res.write('"offset":' + req.params.offset + ",");
   res.write('}');
   res.send();
 });
