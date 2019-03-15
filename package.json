@@ -3,15 +3,18 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "nodejs ./bin/www"
+    "start": "nodejs ./bin/www",
+    "main": "nodejs ./bin/www"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
-    "cookie-parser": "^1.4.3",
+    "cookie-parser": "^1.4.4",
     "debug": "~4.1.1",
     "express": "^4.16.4",
-    "pug": "~2.0.3",
+    "express-handlebars": "^3.0.2",
+    "handlebars": "^4.1.0",
     "morgan": "^1.9.1",
+    "pug": "~2.0.3",
     "static-favicon": "~1.0.0"
   }
 }
