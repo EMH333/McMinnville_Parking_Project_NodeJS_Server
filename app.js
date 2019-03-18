@@ -62,5 +62,7 @@ app.use(function (err, req, res, next) {
     });
 });
 
+//var db = require("./database");
+//db.addCar(true, 1, 1);
 
 module.exports = app;
