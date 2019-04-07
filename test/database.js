@@ -5,11 +5,14 @@ var Db = require('tingodb')({
 }).Db;
 var target = require("../database"); //the actual database we are testing
 
-describe('basic database', function () {
-    it('cars going in and out of garage', async () => {
-        var db = new Db('db' + crypto.randomBytes(20).toString('hex'), {});
-        target.initDatabaseAndListeners(db);
+beforeEach(async function () {
+    //create a new database and initialize it for each test (in entire test suite)
+    var db = new Db('db' + crypto.randomBytes(20).toString('hex'), {});
+    target.initDatabaseAndListeners(db);
+});
 
+describe('basic database', function () {
+    it('cars going in and out of garage', async function () {
         time = target.getCurrentTime() - 10; //minus time for testing accuracy
 
         await target.addCar(true, 1, time + 1);
@@ -34,32 +37,27 @@ describe('basic database', function () {
         });
     });
 
-    it('tests are independant', async () => {
-        var db = new Db('db' + crypto.randomBytes(20).toString('hex'), {});
-        target.initDatabaseAndListeners(db);
+    it('tests are independant', async function () {
         cars = await target.getCarsInGarage();
         expect(cars).to.be.equal(0);
     });
 
-    it('throughput', async () => {
-        var db = new Db('db' + crypto.randomBytes(20).toString('hex'), {});
-        target.initDatabaseAndListeners(db);
-
+    it('throughput', async function () {
         //This test doesn't care about number of cars in garage thus time doesn't have to be actual
-        await target.addCar(false, 1, 1);
-        await target.addCar(false, 1, 2);
-        await target.addCar(true, 1, 3);
-        await target.addCar(false, 1, 4);
-        await target.addCar(true, 1, 5);
+        await target.addCar(true, 1, 1);
+        await target.addCar(true, 1, 2);
+        await target.addCar(false, 1, 3);
+        await target.addCar(true, 1, 4);
+        await target.addCar(false, 1, 5);
 
         cars = await target.getCarThroughput(0, 5);
-        expect(cars).to.be.equal(5);
+        expect(cars).to.be.equal(2);
 
         cars = await target.getCarThroughput(1, 4);
-        expect(cars).to.be.equal(5);
+        expect(cars).to.be.equal(2);
 
         cars = await target.getCarThroughput(2, 2);
-        expect(cars).to.be.equal(3);
+        expect(cars).to.be.equal(1);
 
         cars = await target.getCarThroughput(target.getCurrentTime(), 0);
         expect(cars).to.be.equal(-1);
@@ -74,10 +72,8 @@ describe('basic database', function () {
         expect(cars).to.be.equal(0);
     });
 
-    it("checkpoints", async () => {
-        var db = new Db('db' + crypto.randomBytes(20).toString('hex'), {});
-        target.initDatabaseAndListeners(db);
-
+    it("checkpoints", async function () {
+        this.slow(200); //only give a time warning if this takes more than 200 millis
         time = target.getCurrentTime() - 400; // take some time off to make sure database is in order
 
         //add cars
@@ -97,7 +93,7 @@ describe('basic database', function () {
         expect(cars).to.be.equal(25);
 
 
-        time = time + 100;//move time forward a bit
+        time = time + 100; //move time forward a bit
         //add an insane amount of cars
         for (i = 0; i < 300; i++) {
             await target.addCar(true, 1, time + i);
@@ -105,6 +101,41 @@ describe('basic database', function () {
 
         return target.getCarsInGarage().then(function (cars) {
             expect(cars).to.be.equal(325);
+        });
+    });
+
+
+    it("multiple cars at same time", async function () {
+        time = target.getCurrentTime();
+
+        //add cars
+        for (i = 0; i < 25; i++) {
+            await target.addCar(true, 1, time);
+
+            await target.addCar(true, 1, time);
+            await target.addCar(false, 1, time);
+        }
+
+        return target.getCarsInGarage().then(function (cars) {
+            expect(cars).to.be.equal(25);
+        });
+    });
+
+    it("many cars", async function () {
+        time = target.getCurrentTime() - 2000;
+
+        //add cars
+        for (i = 0; i < 1000; i++) {
+            await target.addCar(true, 1, time + (i * 2));
+            await target.addCar(false, 1, time + (i * 2) + 1);
+        }
+
+        //might as well test throughput
+        cars = await target.getCarThroughput(time, 2000);
+        expect(cars).to.be.equal(1000);
+
+        return target.getCarsInGarage().then(function (cars) {
+            expect(cars).to.be.equal(0);
         });
     });
 })

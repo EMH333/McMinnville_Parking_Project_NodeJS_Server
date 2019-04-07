@@ -53,6 +53,7 @@ The only query that can use these is cars in the garage at a point in time which
  * @param {number} location 
  * @param {number} time Time since EPOCH
  */
+//TODO don't allow car to be added at time previous to last checkpoint
 async function addCar(isEntry, location, time) {
     if (isEntry) {
         collection.insert({
@@ -68,20 +69,35 @@ async function addCar(isEntry, location, time) {
         })
     }
 
-    if (eventsBeforeCheckpoint <= 0) {
-        totalCars = await getCarsInGarage(true);
-        collection.insert({
-            "time": time, //created at same time as car to make sure database stays consistant
-            "type": "checkpoint",
-            "totalCars": totalCars
-        })
-        //console.log("Making checkpoint with " + totalCars + " cars");
+    //only create checkpoints when a car enters
+    if (eventsBeforeCheckpoint <= 0 && isEntry) {
+        //find checkpoints at the current time created previously
+        previousCheckpointAtTime = await new Promise(resolve => {
+            collection.find({
+                type: "checkpoint",
+                time: time
+            }).count(false, function (error, num) {
+                resolve(num)
+            });
+        });
+
+        //if a checkpoint with this time exists, then don't create a new one
+        if (previousCheckpointAtTime < 0) {
+            totalCars = await getCarsInGarage(true);
+            collection.insert({
+                "time": time, //created at same time as car to make sure database stays consistant
+                "type": "checkpoint",
+                "totalCars": totalCars
+            })
+            //console.log("Making checkpoint with " + totalCars + " cars");
+        }
         eventsBeforeCheckpoint = MAKE_CHECKPOINT_AT;
     }
     eventsBeforeCheckpoint--;
 }
 
 /**
+ * @param {boolean} ignoreCheckpoints when true the database counts from scratch
  * @returns {number}
  */
 async function getCarsInGarage(ignoreCheckpoints) {
@@ -99,7 +115,11 @@ async function getCarsInGarage(ignoreCheckpoints) {
                 time: {
                     $gte: getCurrentTime() - MAX_CHECKPOINT_AGE,
                 }
-            },{"sort":[["time",'desc']]}).nextObject(function (err, doc) {
+            }, {
+                "sort": [
+                    ["time", 'desc']
+                ]
+            }).nextObject(function (err, doc) {
                 if (doc != null) {
                     //console.log("using check with " + doc.totalCars + " cars")
                     resolve(doc);
@@ -119,7 +139,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
         collection.find({
             type: "entry",
             time: {
-                $gt: checkpoint.time,
+                $gte: checkpoint.time,
             }
         }).count(false, function (error, num) {
             resolve(num)
@@ -129,20 +149,29 @@ async function getCarsInGarage(ignoreCheckpoints) {
         collection.find({
             type: "exit",
             time: {
-                $gt: checkpoint.time,
+                $gte: checkpoint.time,
             }
         }).count(false, function (error, num) {
             resolve(num)
         });
     }); //resolves to the number of cars that have exited the garage
-    
+
+    //we can assume we are using a checkpoint and thus should subtract one car from total
+    //this prevents problems when multiple cars enter at the time a checkpoint is created
+    if (checkpoint.time > 0) {
+        carsIn--;
+    }
+
     return checkpoint.totalCars + (carsIn - carsOut);
 }
 
 /**
+ * How many cars come both in and out of the parking garage each hour 
+ * (sucessfull parking experiances)
  * 
  * @param {number} startTime the start time in seconds from EPOCH to start from
  * @param {number} offset the offset from the start time to go to, startTime+offset should not exceed current time
+ * @returns {number} number of cars that went both in and out during that time
  */
 async function getCarThroughput(startTime, offset) {
     //can't exist
@@ -154,13 +183,9 @@ async function getCarThroughput(startTime, offset) {
         offset = getCurrentTime - startTime;
     }
 
-    return new Promise(resolve => {
+    carsIn = await new Promise(resolve => {
         collection.find({
-            $or: [{
-                type: "exit"
-            }, {
-                type: "entry"
-            }],
+            type: "entry",
             time: {
                 $gte: startTime,
                 $lte: startTime + offset
@@ -169,6 +194,21 @@ async function getCarThroughput(startTime, offset) {
             resolve(num)
         });
     });
+
+    carsOut = await new Promise(resolve => {
+        collection.find({
+            type: "exit",
+            time: {
+                $gte: startTime,
+                $lte: startTime + offset
+            }
+        }).count(false, function (error, num) {
+            resolve(num)
+        });
+    });
+
+    extraCars = carsIn - carsOut;
+    return carsIn - extraCars;
 }
 
 module.exports = {
