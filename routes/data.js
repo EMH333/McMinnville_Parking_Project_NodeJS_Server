@@ -3,12 +3,6 @@ var router = express.Router();
 var database = require("../database");
 
 /* This will be where all data comes from, served from backends backend */
-var EPOCH = new Date("01-Jan-2019");
-
-function getCurrentTime() {
-  //in seconds, the system outputs data using minutes (preliminary 15 minute intervals)
-  return Math.round((Date.now() - EPOCH) / 1000);
-}
 
 router.get('/', function (req, res) {
   res.write('{"status":"ok",');

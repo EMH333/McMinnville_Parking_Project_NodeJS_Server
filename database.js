@@ -2,28 +2,41 @@ var path = require("path");
 var Db = require('tingodb')().Db;
 var db = new Db(path.join(__dirname, 'db'), {});
 
-initDatabaseAndListeners(db);
-
-
+//var EPOCH = new Date("01-Jan-1970");//Not needed b/c of epoch change
 var collection;
+var eventsBeforeCheckpoint = MAKE_CHECKPOINT_AT; //number of cars in and out, used to create checkpoints
+
+var MAKE_CHECKPOINT_AT = 30; //events per checkpoint
+var MAX_CHECKPOINT_AGE = 1 * 60 * 60; //in seconds
+
+initDatabaseAndListeners(db); //make sure everything is initalized
+
 function initDatabaseAndListeners(database) {
-    console.log("Initalized database and listeners");
+    if (collection == null) {
+        console.log("Initalized database and listeners");
+    }
     collection = database.collection("traffic");
     //getCarsInGarage().then(cars => console.log("There are "+ cars + " cars in the garage right now"));
     //TODO implement serial from feather listeners 
 }
 
+function getCurrentTime() {
+    //in seconds, the system outputs data using minutes (preliminary 15 minute intervals)
+    return Math.round((Date.now()) / 1000);
+}
+
+
 /*
 Data model:
 {
     id: #auto,
-    time: time from January 1st 2019 00:00. THIS MAY CHANGE IF WE MOVE EPOCH TO MATCH LINUX
+    time: time from January 1st 1970 00:00. THIS IS DIFFERENT BECAUSE THIS WILL SIMPLIFY THINGS
     type: "entry", "exit", "checkpoint" or "log"
     
     for entry and exit:
         location: #corasponds to the enterance or exit used
     for checkpoint:
-        total: #total number of cars at that point in time
+        totalCars: #total number of cars at that point in time
     for log:
         message: #string message
 }
@@ -40,7 +53,7 @@ The only query that can use these is cars in the garage at a point in time which
  * @param {number} location 
  * @param {number} time Time since EPOCH
  */
-function addCar(isEntry, location, time) {
+async function addCar(isEntry, location, time) {
     if (isEntry) {
         collection.insert({
             "time": time,
@@ -54,37 +67,114 @@ function addCar(isEntry, location, time) {
             "location": location
         })
     }
+
+    if (eventsBeforeCheckpoint <= 0) {
+        totalCars = await getCarsInGarage(true);
+        collection.insert({
+            "time": time, //created at same time as car to make sure database stays consistant
+            "type": "checkpoint",
+            "totalCars": totalCars
+        })
+        //console.log("Making checkpoint with " + totalCars + " cars");
+        eventsBeforeCheckpoint = MAKE_CHECKPOINT_AT;
+    }
+    eventsBeforeCheckpoint--;
 }
 
 /**
- * @returns {Promise<number>}
+ * @returns {number}
  */
-async function getCarsInGarage() {
-    carsIn = new Promise(resolve => {
+async function getCarsInGarage(ignoreCheckpoints) {
+    //if ignoring checkpoints, create a dummy checkpoint
+    if (ignoreCheckpoints) {
+        checkpoint = {
+            time: 0,
+            totalCars: 0
+        };
+    } else {
+        checkpoint = await new Promise(resolve => {
+            //get checkpoint that is relitivly current to insure any errors don't remain too long
+            collection.find({
+                type: "checkpoint",
+                time: {
+                    $gte: getCurrentTime() - MAX_CHECKPOINT_AGE,
+                }
+            },{"sort":[["time",'desc']]}).nextObject(function (err, doc) {
+                if (doc != null) {
+                    //console.log("using check with " + doc.totalCars + " cars")
+                    resolve(doc);
+                } else {
+                    //create a false checkpoint and tell system to create a new one
+                    eventsBeforeCheckpoint = 0;
+                    resolve({
+                        time: 0,
+                        totalCars: 0
+                    });
+                }
+            });
+        }); //gets checkpoint info
+    }
+
+    carsIn = await new Promise(resolve => {
         collection.find({
-            type: "entry"
-        }).count(false, function (error, num) { resolve(num) });
-      });//cars in resolves to the number of cars that went into the garage
-      carsOut = new Promise(resolve => {
-        out = 0;
+            type: "entry",
+            time: {
+                $gt: checkpoint.time,
+            }
+        }).count(false, function (error, num) {
+            resolve(num)
+        });
+    }); //cars in resolves to the number of cars that went into the garage
+    carsOut = await new Promise(resolve => {
         collection.find({
-            type: "exit"
-        }).count(false, function (error, num) { resolve(num) });
-      });//resolves to the number of cars that have exited the garage
-    /*carsIn = collection.find({
-        "type": "entry"
-    }).count();
-    carsOut = collection.find({
-        "type": "exit"
-    }).count();*/
-   
-    return carsIn.then(function(cIn){
-        return carsOut.then(function (cOut) { return cIn - cOut; })
+            type: "exit",
+            time: {
+                $gt: checkpoint.time,
+            }
+        }).count(false, function (error, num) {
+            resolve(num)
+        });
+    }); //resolves to the number of cars that have exited the garage
+    
+    return checkpoint.totalCars + (carsIn - carsOut);
+}
+
+/**
+ * 
+ * @param {number} startTime the start time in seconds from EPOCH to start from
+ * @param {number} offset the offset from the start time to go to, startTime+offset should not exceed current time
+ */
+async function getCarThroughput(startTime, offset) {
+    //can't exist
+    if (startTime >= getCurrentTime() || startTime < 0 || offset < 0) {
+        return new Promise(resolve => resolve(-1)); //TODO change this to actually fail
+    }
+
+    if (startTime + offset > getCurrentTime()) {
+        offset = getCurrentTime - startTime;
+    }
+
+    return new Promise(resolve => {
+        collection.find({
+            $or: [{
+                type: "exit"
+            }, {
+                type: "entry"
+            }],
+            time: {
+                $gte: startTime,
+                $lte: startTime + offset
+            }
+        }).count(false, function (error, num) {
+            resolve(num)
+        });
     });
 }
 
 module.exports = {
     addCar,
     getCarsInGarage,
-    initDatabaseAndListeners
+    initDatabaseAndListeners,
+    getCurrentTime,
+    getCarThroughput
 };
