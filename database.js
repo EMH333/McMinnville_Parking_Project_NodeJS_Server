@@ -27,6 +27,14 @@ function getCurrentTime() {
 
 
 /*
+    TODO FIXME
+    left to implement:
+    -per exit statistics
+    -car 'events' in timeframe
+    -in vs out differences
+*/
+
+/*
 Data model:
 {
     id: #auto,

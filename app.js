@@ -17,7 +17,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'handlebars');
 
 app.use(favicon()); //TODO add favicon
-app.use(logger('dev'));
+app.use(logger(':remote-addr :remote-user :method :url HTTP/:http-version :status - :res[content-length] bytes - :response-time ms'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: false
@@ -33,7 +33,7 @@ app.use('/', routes);
 
 /// catch 404 and forwarding to error handler
 app.use(function (req, res, next) {
-    var err = new Error('Not Found');
+    var err = new Error('Page Not Found');
     err.status = 404;
     next(err);
 });
