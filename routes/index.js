@@ -1,32 +1,30 @@
-var express = require('express');
-var router = express.Router();
-var database = require("../database");
+const express = require('express');
+// eslint-disable-next-line new-cap
+const router = express.Router();
+const database = require('../database');
 
 
-var data = require('./data');
+const data = require('./data');
 
 router.use('/data', data);
 
 
 /* GET home page. */
-router.get('/', function (req, res) {
+router.get('/', function(req, res) {
+  // get current cars in garage
+  const total = database.getCarsInGarage();
+  // get throughput for last hour
+  const throughput = database.getCarThroughput(database.getEpochXMinutesAgo(60), database.getXMinutesInEpoch(60));
 
-  //get current cars in garage
-  var total = database.getCarsInGarage()
-  //get throughput for last hour
-  var throughput = database.getCarThroughput(database.getEpochXMinutesAgo(60), database.getXMinutesInEpoch(60))
-
-  Promise.all([total, throughput]).then(function (values) {
+  Promise.all([total, throughput]).then(function(values) {
     res.render('index', {
       currentCars: values[0],
-      throughput: values[1]
+      throughput: values[1],
     });
-  })
-
-
+  });
 });
 
-router.get('/whole', function (req, res) {
+router.get('/whole', function(req, res) {
   res.render('wholeGarage');
 });
 
