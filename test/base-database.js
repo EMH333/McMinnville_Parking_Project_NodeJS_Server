@@ -74,7 +74,8 @@ describe('basic database', function() {
   });
 
   it('checkpoints', async function() {
-    slow(200); // only give a time warning if this takes more than 200 millis
+    // eslint-disable-next-line no-invalid-this
+    this.slow(200); // only give a time warning if this takes more than 200 millis
     time = target.getCurrentTime() - 400; // take some time off to make sure database is in order
 
     // add cars

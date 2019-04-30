@@ -2,12 +2,12 @@ const path = require('path');
 const Db = require('tingodb')().Db;
 const db = new Db(path.join(__dirname, 'db'), {});
 
+const MAKE_CHECKPOINT_AT = 30; // events per checkpoint
+const MAX_CHECKPOINT_AGE = 1 * 60 * 60; // in seconds
+
 // var EPOCH = new Date("01-Jan-1970");//Not needed b/c of epoch change
 let collection;
 let eventsBeforeCheckpoint = MAKE_CHECKPOINT_AT; // number of cars in and out, used to create checkpoints
-
-const MAKE_CHECKPOINT_AT = 30; // events per checkpoint
-const MAX_CHECKPOINT_AGE = 1 * 60 * 60; // in seconds
 
 initDatabaseAndListeners(db); // make sure everything is initalized
 
