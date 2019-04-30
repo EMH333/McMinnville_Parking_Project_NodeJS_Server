@@ -100,7 +100,7 @@ async function addCar(isEntry, location, time) {
     //only create checkpoints when a car enters
     if (eventsBeforeCheckpoint <= 0 && isEntry) {
         //find checkpoints at the current time created previously
-        previousCheckpointAtTime = await new Promise(resolve => {
+        let previousCheckpointAtTime = await new Promise(resolve => {
             collection.find({
                 type: "checkpoint",
                 time: time
@@ -111,7 +111,7 @@ async function addCar(isEntry, location, time) {
 
         //if a checkpoint with this time exists, then don't create a new one
         if (previousCheckpointAtTime < 0) {
-            totalCars = await getCarsInGarage(true);
+            let totalCars = await getCarsInGarage(true);
             collection.insert({
                 "time": time, //created at same time as car to make sure database stays consistant
                 "type": "checkpoint",
@@ -129,6 +129,10 @@ async function addCar(isEntry, location, time) {
  * @returns {number}
  */
 async function getCarsInGarage(ignoreCheckpoints) {
+    let checkpoint = {
+        time: 0,
+        totalCars: 0
+    };
     //if ignoring checkpoints, create a dummy checkpoint
     if (ignoreCheckpoints) {
         checkpoint = {
@@ -136,7 +140,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
             totalCars: 0
         };
     } else {
-        checkpoint = await new Promise(resolve => {
+         checkpoint = await new Promise(resolve => {
             //get checkpoint that is relitivly current to insure any errors don't remain too long
             collection.find({
                 type: "checkpoint",
@@ -163,7 +167,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
         }); //gets checkpoint info
     }
 
-    carsIn = await new Promise(resolve => {
+    let carsIn = await new Promise(resolve => {
         collection.find({
             type: "entry",
             time: {
@@ -173,7 +177,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
             resolve(num)
         });
     }); //cars in resolves to the number of cars that went into the garage
-    carsOut = await new Promise(resolve => {
+    let carsOut = await new Promise(resolve => {
         collection.find({
             type: "exit",
             time: {
@@ -211,7 +215,7 @@ async function getCarThroughput(startTime, offset) {
         offset = getCurrentTime - startTime;
     }
 
-    carsIn = await new Promise(resolve => {
+    let carsIn = await new Promise(resolve => {
         collection.find({
             type: "entry",
             time: {
@@ -223,7 +227,7 @@ async function getCarThroughput(startTime, offset) {
         });
     });
 
-    carsOut = await new Promise(resolve => {
+    let carsOut = await new Promise(resolve => {
         collection.find({
             type: "exit",
             time: {
@@ -235,7 +239,7 @@ async function getCarThroughput(startTime, offset) {
         });
     });
 
-    extraCars = carsIn - carsOut;
+    let extraCars = carsIn - carsOut;
     return carsIn - extraCars;
 }
 

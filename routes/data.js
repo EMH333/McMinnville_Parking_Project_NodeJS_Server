@@ -6,7 +6,7 @@ var database = require("../database");
 
 router.get('/', function (req, res) {
   res.write('{"status":"ok",');
-  res.write('"currentTime":' + getCurrentTime()) //TODO round this
+  res.write('"currentTime":' + database.getCurrentTime()) //TODO round this
   res.write('}');
   res.send();
 });
