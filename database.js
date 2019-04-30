@@ -20,9 +20,29 @@ function initDatabaseAndListeners(database) {
     //TODO implement serial from feather listeners 
 }
 
+/**
+ * @returns time since epoch
+ */
 function getCurrentTime() {
-    //in seconds, the system outputs data using minutes (preliminary 15 minute intervals)
+    //returns in seconds. the system outputs data using minutes (preliminary 15 minute intervals)
     return Math.round((Date.now()) / 1000);
+}
+
+/**
+ * 
+ * @param {Number} minutes number of minutes in the past
+ * @returns the time since epoch x minutes ago
+ */
+function getEpochXMinutesAgo(minutes) {
+    return getCurrentTime() - getXMinutesInEpoch(minutes);
+}
+
+/**
+ * Returns the duration of time in epoch
+ * @param {Number} minutes 
+ */
+function getXMinutesInEpoch(minutes){
+    return (minutes * 60);
 }
 
 
@@ -224,5 +244,7 @@ module.exports = {
     getCarsInGarage,
     initDatabaseAndListeners,
     getCurrentTime,
+    getEpochXMinutesAgo,
+    getXMinutesInEpoch,
     getCarThroughput
 };

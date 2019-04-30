@@ -10,11 +10,24 @@ router.use('/data', data);
 
 /* GET home page. */
 router.get('/', function (req, res) {
-  database.getCarsInGarage().then(currentCars => {
+
+  //get current cars in garage
+  var total = database.getCarsInGarage()
+  //get throughput for last hour
+  var throughput = database.getCarThroughput(database.getEpochXMinutesAgo(60), database.getXMinutesInEpoch(60))
+
+  Promise.all([total, throughput]).then(function (values) {
     res.render('index', {
-      currentCars
+      currentCars: values[0],
+      throughput: values[1]
     });
-  });
+  })
+
+
+});
+
+router.get('/whole', function (req, res) {
+  res.render('wholeGarage');
 });
 
 module.exports = router;
