@@ -1,7 +1,7 @@
 // Gulp.js configuration
 const gulp = require('gulp');
 const newer = require('gulp-newer');
-const concat = require('gulp-concat');
+// const concat = require('gulp-concat');
 const stripdebug = require('gulp-strip-debug');
 const uglify = require('gulp-uglify');
 const sass = require('gulp-sass');

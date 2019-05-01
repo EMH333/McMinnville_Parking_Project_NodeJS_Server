@@ -1,4 +1,5 @@
 const path = require('path');
+const config = require('./config');
 const Db = require('tingodb')().Db;
 const db = new Db(path.join(__dirname, 'db'), {});
 
@@ -214,7 +215,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
 async function getCarThroughput(startTime, offset) {
   // can't exist
   if (startTime >= getCurrentTime() || startTime < 0 || offset < 0) {
-    return new Promise((resolve) => resolve(-1)); // TODO change this to actually fail
+    return -1;
   }
 
   if (startTime + offset > getCurrentTime()) {
@@ -249,6 +250,84 @@ async function getCarThroughput(startTime, offset) {
   return carsIn - extraCars;
 }
 
+
+/**
+ * returns how many cars used this enterance/exit in the set timeframe
+ * @param {Number} startTime the start time in seconds from EPOCH to start from
+ * @param {Number} offset the offset from the start time to go to, startTime+offset should not exceed current time
+ * @param {Number} exitNumber what exit to find stats for
+ * @param {Number} option 0 = cars in, 1 = cars out, 2 = total cars
+ */
+async function getCarsUsingExit(startTime, offset, exitNumber, option) {
+  let ret = -1;
+
+  // sanity checking for start and offset times
+  if (startTime >= getCurrentTime() || startTime < 0 || offset < 0) {
+    return -1;
+  }
+  if (startTime + offset > getCurrentTime()) {
+    offset = getCurrentTime - startTime;
+  }
+
+  // confirm node exists
+  if (exitNumber < 0 || exitNumber > config.nodes.length) {
+    return -1;
+  }
+  switch (option) {
+    // cars in
+    case 0:
+      ret = await new Promise((resolve) => {
+        collection.find({
+          location: exitNumber,
+          type: 'entry',
+          time: {
+            $gte: startTime,
+            $lte: startTime + offset,
+          },
+        }).count(false, function(error, num) {
+          resolve(num);
+        });
+      });
+      break;
+
+      // cars out
+    case 1:
+      ret = await new Promise((resolve) => {
+        collection.find({
+          location: exitNumber,
+          type: 'exit',
+          time: {
+            $gte: startTime,
+            $lte: startTime + offset,
+          },
+        }).count(false, function(error, num) {
+          resolve(num);
+        });
+      });
+      break;
+
+
+      // total cars
+    case 2:
+      ret = await new Promise((resolve) => {
+        collection.find({
+          location: exitNumber,
+          time: {
+            $gte: startTime,
+            $lte: startTime + offset,
+          },
+        }).count(false, function(error, num) {
+          resolve(num);
+        });
+      });
+      break;
+
+    default:
+      break;
+  }
+  return ret;
+}
+
 module.exports = {
   addCar,
   getCarsInGarage,
@@ -257,4 +336,5 @@ module.exports = {
   getEpochXMinutesAgo,
   getXMinutesInEpoch,
   getCarThroughput,
+  getCarsUsingExit,
 };

@@ -18,7 +18,7 @@ app.set('view engine', 'handlebars');
 
 app.use(favicon()); // TODO add favicon
 // eslint-disable-next-line max-len
-const logPattern = `:remote-addr :remote-user :method :url HTTP/:http-version :status - :res[content-length] bytes - :response-time ms`;
+const logPattern = `:remote-addr :remote-user [:date[clf]] :method :url HTTP/:http-version :status - :res[content-length] bytes - :response-time ms`;
 app.use(logger(logPattern));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
