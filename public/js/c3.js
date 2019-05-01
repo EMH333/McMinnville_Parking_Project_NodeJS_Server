@@ -1,3 +1,4 @@
+/* eslint-disable */
 /* @license C3.js v0.6.14 | (c) C3 Team and other contributors | http://c3js.org/ */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :

@@ -25,13 +25,12 @@ app.use(bodyParser.urlencoded({
   extended: false,
 }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));// add nginx and keep this as a backup
 
 
 // set up routes
 const routes = require('./routes');
 app.use('/', routes);
-
 
 // / catch 404 and forwarding to error handler
 app.use(function(req, res, next) {
