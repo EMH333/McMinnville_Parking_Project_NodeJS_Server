@@ -6,8 +6,8 @@
     "test": "test"
   },
   "scripts": {
-    "start": "nodejs ./bin/www",
-    "main": "nodejs ./bin/www",
+    "start": "node ./bin/www",
+    "main": "node ./bin/www",
     "test": "mocha"
   },
   "dependencies": {

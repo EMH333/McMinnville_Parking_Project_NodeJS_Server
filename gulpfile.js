@@ -1,7 +1,7 @@
 // Gulp.js configuration
 const gulp = require('gulp');
 const newer = require('gulp-newer');
-// const concat = require('gulp-concat');
+const concat = require('gulp-concat');
 const stripdebug = require('gulp-strip-debug');
 const uglify = require('gulp-uglify');
 const sass = require('gulp-sass');
@@ -65,11 +65,28 @@ gulp.task('css', function() {
 });
 
 gulp.task('img', function() {
-  const
-    out = folder.build + 'images/';
+  const out = folder.build + 'images/';
   const imgbuild = gulp.src(folder.src + 'images/**/*').pipe(newer(out));
 
   return imgbuild.pipe(gulp.dest(out));
+});
+
+// deals with the shared code between the server and the client
+gulp.task('sharedjs', function() {
+  const out = folder.build + 'shared/';
+  let sharedbuild = gulp.src(folder.src + 'shared/**/*.js').pipe(newer(out))
+      .pipe(concat('shared.js'));
+  if (!devBuild) {
+    sharedbuild = sharedbuild
+        .pipe(stripdebug())
+        .pipe(babel({
+          presets: ['@babel/env'],
+        }))
+        .pipe(uglify().on('error', function(err) {
+          log.error(err);
+        }));
+  }
+  return sharedbuild.pipe(gulp.dest(out));
 });
 
 
@@ -77,6 +94,7 @@ gulp.task('img', function() {
 gulp.task('watcher', function() {
   // javascript changes
   gulp.watch(folder.src + 'js/**/*.js', gulp.task('js'));
+  gulp.watch(folder.src + 'shared/**/*.js', gulp.task('sharedjs'));
 
   // css changes
   gulp.watch(folder.src + 'css/**/*', gulp.task('css'));
@@ -89,7 +107,7 @@ gulp.task('watcher', function() {
 
 
 // gulp.task('run', ['html', 'js', 'css', 'fonts', 'json', 'img', 'sw']);
-gulp.task('run', gulp.parallel('js', 'css', 'img'));
+gulp.task('run', gulp.parallel('js', 'sharedjs', 'css', 'img'));
 gulp.task('watch', gulp.series('run', 'watcher'));
 
 gulp.task('default', gulp.series('run'));

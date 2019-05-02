@@ -2,11 +2,16 @@ const express = require('express');
 // eslint-disable-next-line new-cap
 const router = express.Router();
 const database = require('../database');
+const config = require('../config');
 
 
 const data = require('./data');
-
 router.use('/data', data);
+
+if (config.env == 'development') {
+  const add = require('./add-car');
+  router.use('/car', add);
+}
 
 
 /* GET home page. */

@@ -1,7 +1,7 @@
-const path = require('path');
-const config = require('./config');
+let config = require('./config');
+const time = require('./webDev/shared/time.js');
 const Db = require('tingodb')().Db;
-const db = new Db(path.join(__dirname, 'db'), {});
+const db = new Db(config.databaseStorageLocation, {});
 
 const MAKE_CHECKPOINT_AT = 30; // events per checkpoint
 const MAX_CHECKPOINT_AGE = 1 * 60 * 60; // in seconds
@@ -152,7 +152,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
       collection.find({
         type: 'checkpoint',
         time: {
-          $gte: getCurrentTime() - MAX_CHECKPOINT_AGE,
+          $gte: time.getCurrentTime() - MAX_CHECKPOINT_AGE,
         },
       }, {
         'sort': [
@@ -214,12 +214,12 @@ async function getCarsInGarage(ignoreCheckpoints) {
  */
 async function getCarThroughput(startTime, offset) {
   // can't exist
-  if (startTime >= getCurrentTime() || startTime < 0 || offset < 0) {
+  if (startTime >= time.getCurrentTime() || startTime < 0 || offset < 0) {
     return -1;
   }
 
-  if (startTime + offset > getCurrentTime()) {
-    offset = getCurrentTime - startTime;
+  if (startTime + offset > time.getCurrentTime()) {
+    offset = time.getCurrentTime() - startTime;
   }
 
   const carsIn = await new Promise((resolve) => {
@@ -246,6 +246,7 @@ async function getCarThroughput(startTime, offset) {
     });
   });
 
+
   const extraCars = carsIn - carsOut;
   return carsIn - extraCars;
 }
@@ -262,11 +263,11 @@ async function getCarsUsingExit(startTime, offset, exitNumber, option) {
   let ret = -1;
 
   // sanity checking for start and offset times
-  if (startTime >= getCurrentTime() || startTime < 0 || offset < 0) {
+  if (startTime >= time.getCurrentTime() || startTime < 0 || offset < 0) {
     return -1;
   }
-  if (startTime + offset > getCurrentTime()) {
-    offset = getCurrentTime - startTime;
+  if (startTime + offset > time.getCurrentTime()) {
+    offset = time.getCurrentTime() - startTime;
   }
 
   // confirm node exists
@@ -328,6 +329,14 @@ async function getCarsUsingExit(startTime, offset, exitNumber, option) {
   return ret;
 }
 
+/**
+ *
+ * @param {*} c the configuration object
+ */
+function setConfig(c) {
+  config = c;
+}
+
 module.exports = {
   addCar,
   getCarsInGarage,
@@ -337,4 +346,5 @@ module.exports = {
   getXMinutesInEpoch,
   getCarThroughput,
   getCarsUsingExit,
+  setConfig,
 };

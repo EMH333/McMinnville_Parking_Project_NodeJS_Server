@@ -36,7 +36,7 @@ router.get('/in/:start/:offset', function(req, res) {
   res.write({
     'status': 'ok',
     'start': req.params.start,
-    'offset': req.params.offset,
+    'end': req.params.start+ req.params.offset,
   });
   res.send();
 });
@@ -47,20 +47,23 @@ router.get('/out/:start/:offset', function(req, res) {
   res.write({
     'status': 'ok',
     'start': req.params.start,
-    'offset': req.params.offset,
+    'end': req.params.start+ req.params.offset,
   });
   res.send();
 });
 
 // cars throughput, time param in hours
 router.get('/thru/:start/:offset', function(req, res) {
-  // TODO implement
-  res.write({
-    'status': 'ok',
-    'start': req.params.start,
-    'offset': req.params.offset,
+  const start = parseInt(req.params.start);
+  const offset = parseInt(req.params.offset);
+  database.getCarThroughput(start, offset).then((cars) => {
+    res.send({
+      'status': 'ok',
+      'start': start,
+      'end': start + offset,
+      'throughput': cars,
+    });
   });
-  res.send();
 });
 
 module.exports = router;
