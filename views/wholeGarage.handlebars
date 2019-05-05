@@ -3,15 +3,16 @@
 
 <div id="total-over-time" class="graph"></div>
 <select name="total-time-selector" id="total-selector">
-    <option value="1">Today</option>
-    <option value="x">This week</option>
+    <option value="1">Yesterday (30 minute intervals)</option>
+    <option value="4">Last 4 days (2 hour interval)</option>
+    <option value="7">This week (4 hour interval)</option>
 </select>
 
 <div id="throughput-over-time" class="graph"></div>
 <select name="throughput-time-selector" id="throughput-selector">
-    <option value="1">Today</option>
     <option value="7">This week</option>
     <option value="31">This month</option>
+    <option value="90">Last 90 days</option>
 </select>
 
 <script src="/static/js/d3.js"></script>

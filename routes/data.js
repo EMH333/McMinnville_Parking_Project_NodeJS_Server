@@ -22,6 +22,16 @@ router.get('/current', function(req, res) {
   });
 });
 
+router.get('/total/:time', function(req, res) {
+  database.getCarsInGarage(false, parseInt(req.params.time)).then((cars) => {
+    res.send({
+      'status': 'ok',
+      'time': parseInt(req.params.time),
+      'cars': cars,
+    });
+  });
+});
+
 router.get('/time', function(req, res) {
   res.send({
     'status': 'ok',

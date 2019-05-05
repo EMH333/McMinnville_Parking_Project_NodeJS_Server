@@ -140,4 +140,29 @@ describe('basic database', function() {
       expect(cars).to.be.equal(0);
     });
   });
+
+  it('current cars funtion handles points in time', async function() {
+    time = target.getCurrentTime() - 2000;
+    await target.addCar(true, 0, time);// one car at time
+    await target.addCar(true, 0, time+100);// 2
+    await target.addCar(true, 0, time+200);// 3
+    await target.addCar(true, 0, time+300);// 4
+    await target.addCar(false, 0, time+400);// 3
+    await target.addCar(false, 0, time+500);// 2
+
+    cars = await target.getCarsInGarage();
+    expect(cars).to.be.equal(2);
+    cars = await target.getCarsInGarage(false, time+201);
+    expect(cars).to.be.equal(3);
+    cars = await target.getCarsInGarage(false, time+301);
+    expect(cars).to.be.equal(4);
+    cars = await target.getCarsInGarage(false, time+401);
+    expect(cars).to.be.equal(3);
+
+
+    cars = await target.getCarsInGarage(false, time-1);
+    expect(cars).to.be.equal(0);
+    cars = await target.getCarsInGarage(false, time);
+    expect(cars).to.be.equal(1);
+  });
 });

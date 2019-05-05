@@ -133,9 +133,13 @@ async function addCar(isEntry, location, time) {
 
 /**
  * @param {boolean} ignoreCheckpoints when true the database counts from scratch
+ * @param {number} pointInTime used to set the point in time to find the cars in the garage, is optional
  * @return {number}
  */
-async function getCarsInGarage(ignoreCheckpoints) {
+async function getCarsInGarage(ignoreCheckpoints, pointInTime) {
+  if (!pointInTime) {
+    pointInTime = time.getCurrentTime();
+  }
   let checkpoint = {
     time: 0,
     totalCars: 0,
@@ -152,7 +156,8 @@ async function getCarsInGarage(ignoreCheckpoints) {
       collection.find({
         type: 'checkpoint',
         time: {
-          $gte: time.getCurrentTime() - MAX_CHECKPOINT_AGE,
+          $gte: pointInTime - MAX_CHECKPOINT_AGE,
+          $lte: pointInTime,
         },
       }, {
         'sort': [
@@ -179,6 +184,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
       type: 'entry',
       time: {
         $gte: checkpoint.time,
+        $lte: pointInTime,
       },
     }).count(false, function(error, num) {
       resolve(num);
@@ -189,6 +195,7 @@ async function getCarsInGarage(ignoreCheckpoints) {
       type: 'exit',
       time: {
         $gte: checkpoint.time,
+        $lte: pointInTime,
       },
     }).count(false, function(error, num) {
       resolve(num);
