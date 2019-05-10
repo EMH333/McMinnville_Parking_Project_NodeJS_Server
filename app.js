@@ -8,7 +8,6 @@ const exphbs = require('express-handlebars');
 
 
 const app = express();
-
 // view engine setup
 app.engine('handlebars', exphbs({
   defaultLayout: 'main',
@@ -62,8 +61,5 @@ app.use(function(err, req, res, next) {
     error: {},
   });
 });
-
-// var db = require("./database");
-// db.addCar(true, 1, 1);
 
 module.exports = app;
