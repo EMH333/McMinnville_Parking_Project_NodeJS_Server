@@ -61,19 +61,23 @@ function initDatabaseAndListeners(database) {
             output.writeSync(0);
             const process = buffer;
             console.log('Got car going direction ' + process[0] + ' from node ' + process[2]);
+
+            // actually add car to database
+            if (process[0]==='1') {
+              addCar(true, parseInt(process[2]), time.getCurrentTime());
+            } else {
+              addCar(false, parseInt(process[2]), time.getCurrentTime());
+            }
             gettingData = false;
           }
         });
-      });
-
-      process.on('SIGINT', () => {
-        output.unexport();
       });
     });
   }
 }
 
 /**
+ * @deprecated
  * @return {Number} time since epoch
  */
 function getCurrentTime() {
