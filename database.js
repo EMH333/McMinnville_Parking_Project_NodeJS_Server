@@ -2,6 +2,12 @@ let config = require('./config');
 const time = require('./webDev/shared/time.js');
 const Db = require('tingodb')().Db;
 const db = new Db(config.databaseStorageLocation, {});
+let raspi;
+let Serial;
+let Gpio;
+let buffer;// buffer used for serial communication
+let gettingData = false;
+
 
 const MAKE_CHECKPOINT_AT = 30; // events per checkpoint
 const MAX_CHECKPOINT_AGE = 1 * 60 * 60; // in seconds
@@ -21,8 +27,50 @@ function initDatabaseAndListeners(database) {
     console.log('Initalized database and listeners');
   }
   collection = database.collection('traffic');
-  // getCarsInGarage().then(cars => console.log("There are "+ cars + " cars in the garage right now"));
-  // TODO implement serial from feather listeners
+
+  // only run this on the raspberry pi
+  if (config.env === 'production') {
+    raspi = require('raspi');
+    Serial = require('raspi-serial').Serial;
+    Gpio = require('onoff').Gpio;
+
+    if (!Gpio.accessible) {
+      throw new Error('GPIO ERROR');
+    }
+
+    raspi.init(() => {
+      const serial = new Serial({
+        portId: '/dev/serial0',
+        dataBits: 7,
+      });
+      // eslint-disable-next-line prefer-const
+      let output = new Gpio(17, 'out');// raw pin 17 also known as GPIO0 //see https://pinout.xyz
+      output.writeSync(0);// turn off to begin
+      serial.open(() => {
+        serial.on('data', (data) => {
+          // process.stdout.write(data);
+          buffer += data;
+          if (buffer.indexOf('DATA.') !== -1) {
+            buffer = '';
+            serial.flush();
+            output.writeSync(1);
+            gettingData = true;
+            process.stdout.write('Trying to get data\n');
+          }
+          if (gettingData && buffer.length == 13) {
+            output.writeSync(0);
+            const process = buffer;
+            console.log('Got car going direction ' + process[0] + ' from node ' + process[2]);
+            gettingData = false;
+          }
+        });
+      });
+
+      process.on('SIGINT', () => {
+        output.unexport();
+      });
+    });
+  }
 }
 
 /**
