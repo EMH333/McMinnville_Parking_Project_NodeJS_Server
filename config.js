@@ -20,7 +20,7 @@ module.exports = {
    * Your favorite port
    */
   port: parseInt(process.env.PORT, 10) || 3000,
-
+  totalSpots: 212,
   nodes: {
     2: {
       name: 'Test 2',

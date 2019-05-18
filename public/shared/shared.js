@@ -32,6 +32,7 @@ function getTodaysEpoch() {
   day.setHours(0);
   day.setMinutes(0);
   day.setSeconds(0);
+  day.setMilliseconds(1);
   return Math.round(day.getTime()/1000);
 }
 

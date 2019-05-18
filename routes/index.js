@@ -25,6 +25,7 @@ router.get('/', function(req, res) {
     res.render('index', {
       currentCars: values[0],
       throughput: values[1],
+      utilization: (values[0]/config.totalSpots).toFixed(3),
     });
   });
 });

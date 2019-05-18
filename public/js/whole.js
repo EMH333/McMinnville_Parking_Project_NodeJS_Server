@@ -40,19 +40,20 @@ async function updateThroughputGraph() {
   const daysToGetDataFor = document.getElementById('throughput-selector').value;
   const dayInTime = getXMinutesInEpoch(60*24);
   const data = [['x'], ['Throughput']];
-  for (i = 0; i < daysToGetDataFor; i++) {
-    const date = new Date(getTodaysEpoch()*1000);
-    date.setDate(date.getDate()-daysToGetDataFor+i+1);
-    data[0][i+1] = date;
-    const start = Math.round(date.getTime()/1000);
 
-    const cacheKey = date.getDate()+'_'+dayInTime;
+  const date = new Date(getTodaysEpoch()*1000);
+  for (i = 0; i < daysToGetDataFor; i++) {
+    const time = Math.round(date.getTime()/1000) - (i * dayInTime);
+    const displayDate = new Date(time * 1000);
+    data[0][i+1] = displayDate;
+
+    const cacheKey = time;
     if (typeof throughputCache.get(cacheKey)!=='undefined') {
       // key in cache, serve from there
       data[1][i+1] = throughputCache.get(cacheKey);
     } else {
       // key not in cache, fetch from server
-      data[1][i+1] = await fetch('/data/thru/'+start+'/'+dayInTime).then(async function(data) {
+      data[1][i+1] = await fetch('/data/thru/'+time+'/'+dayInTime).then(async function(data) {
         json = await data.json();
         return json.throughput;
       });
@@ -89,7 +90,7 @@ async function updateTotalsGraph() {
     },
   });
 
-  const daysToGetDataFor = document.getElementById('total-selector').value;
+  const daysToGetDataFor = parseInt(document.getElementById('total-selector').value);
   let interval = getXMinutesInEpoch(60);
   let numIntervals = 24;// how many intervals per day
   if (daysToGetDataFor === 1) {
@@ -101,6 +102,9 @@ async function updateTotalsGraph() {
   } else if (daysToGetDataFor === 7) {
     interval = getXMinutesInEpoch(60 * 4);
     numIntervals = 6;
+  } else if (daysToGetDataFor === 30) {
+    interval = getXMinutesInEpoch(60 * 8);
+    numIntervals = 3;
   }
   const data = [['x'], ['Total Cars In Garage']];
   // eslint-disable-next-line prefer-const
@@ -109,17 +113,7 @@ async function updateTotalsGraph() {
   for (let i = 0; i < daysToGetDataFor * numIntervals; i++) {
     const time = Math.round(date.getTime()/1000) - (i * interval);
     const displayDate = new Date(time * 1000);
-
-
-    // let options = {
-    //  weekday: 'long',
-    //  year: 'numeric',
-    //  month: 'short',
-    //  day: '2-digit',
-    // };
-    // displayDate.toLocaleDateString('en-US', options)
     data[0][i+1] = displayDate;
-
 
     const cacheKey = time;
     if (typeof totalCache.get(cacheKey)!=='undefined') {
