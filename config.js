@@ -21,21 +21,36 @@ module.exports = {
    */
   port: parseInt(process.env.PORT, 10) || 3000,
   totalSpots: 212,
-  nodes: {
-    2: {
+  nodes: [
+    {
+      id: 2,
       name: 'Test 2',
     },
-    3: {
-      name: 'Test 3',
+    {
+      id: 0,
+      name: 'Test 0',
     },
-    4: {
-      name: 'Test 4',
+    {
+      id: 1,
+      name: 'Test 1',
     },
-    5: {
-      name: 'Test 5',
+    /*
+    {
+      id: 3,
+      name: 'Actual',
     },
-    6: {
-      name: 'Test 6',
+    {
+      id: 4,
+      name: 'Actual',
     },
-  },
+    {
+      id: 5,
+      name: 'Actual',
+    },
+    {
+      id: 6,
+      name: 'Actual',
+    },
+    */
+  ],
 };

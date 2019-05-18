@@ -25,13 +25,17 @@ router.get('/', function(req, res) {
     res.render('index', {
       currentCars: values[0],
       throughput: values[1],
-      utilization: (values[0]/config.totalSpots).toFixed(3),
+      utilization: ((values[0]/config.totalSpots)*100).toFixed(2),
     });
   });
 });
 
 router.get('/whole', function(req, res) {
   res.render('wholeGarage');
+});
+
+router.get('/pernode', function(req, res) {
+  res.render('per-node');
 });
 
 module.exports = router;

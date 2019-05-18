@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 document.addEventListener('DOMContentLoaded', async function() {
   updateTotalsGraph();
   document.getElementById('total-selector').addEventListener('change', function(evnt) {
