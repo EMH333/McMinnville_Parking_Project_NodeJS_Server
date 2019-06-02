@@ -15,7 +15,7 @@ app.engine('handlebars', exphbs({
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'handlebars');
 
-app.use(favicon()); // TODO add favicon
+app.use(favicon(path.join(__dirname, 'img', 'fav.ico')));
 // eslint-disable-next-line max-len
 const logPattern = `:remote-addr :remote-user [:date[clf]] :method :url HTTP/:http-version :status - :res[content-length] bytes - :response-time ms`;
 app.use(logger(logPattern));
