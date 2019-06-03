@@ -5,6 +5,7 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const exphbs = require('express-handlebars');
+const basicAuth = require('express-basic-auth');
 
 
 const app = express();
@@ -26,6 +27,14 @@ app.use(bodyParser.urlencoded({
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));// add nginx and keep this as a backup
 
+app.use(basicAuth({
+  users: {
+    'someuser1': 'password',
+    'EMH': 'testing1',
+  },
+  challenge: true,
+  realm: 'Parallel Parking Server',
+}));
 
 // set up routes
 const routes = require('./routes');
