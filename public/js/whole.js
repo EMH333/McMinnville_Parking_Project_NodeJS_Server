@@ -30,7 +30,7 @@ async function updateThroughputGraph() {
       x: {
         type: 'timeseries',
         tick: {
-          format: '%d-%b-%Y',
+          format: '%d-%b-%Y %I:%M%p',
         },
       },
     },
@@ -76,14 +76,28 @@ async function updateTotalsGraph() {
       columns: [
         // year month day
         ['x', '2019-01-01'],
-        ['Total Cars In Garage', 0],
+        ['Utilization', 0],
       ],
+    },
+    tooltip: {
+      format: {
+        value: function(value, ratio, id, index) {
+          return value + '%';
+        },
+      },
     },
     axis: {
       x: {
         type: 'timeseries',
         tick: {
-          format: '%d-%b-%Y %H:%M',
+          format: '%d-%b-%Y %I:%M%p',
+        },
+      },
+      y: {
+        tick: {
+          format: function(d) {
+            return d + '%';
+          },
         },
       },
     },
@@ -105,7 +119,7 @@ async function updateTotalsGraph() {
     interval = getXMinutesInEpoch(60 * 8);
     numIntervals = 3;
   }
-  const data = [['x'], ['Total Cars In Garage']];
+  const data = [['x'], ['Utilization']];
   // eslint-disable-next-line prefer-const
   let promises = [];
   const date = new Date(getTodaysEpoch()*1000);
@@ -122,10 +136,10 @@ async function updateTotalsGraph() {
       promises.push(
           new Promise(async function(resolve) {
             // key not in cache, fetch from server
-            data[1][i+1] = await fetch('/data/total/'+time).then(async function(data) {
+            data[1][i+1] = (await fetch('/data/total/'+time).then(async function(data) {
               json = await data.json();
               return json.cars;
-            });
+            })/220*100).toFixed(2);
             totalCache.set(cacheKey, data[1][i+1]);
             resolve();
           })
