@@ -4,7 +4,7 @@ const router = express.Router();
 const database = require('../database');
 const config = require('../config');
 
-
+// data serves all the 'api' requests
 const data = require('./data');
 router.use('/data', data);
 
@@ -36,6 +36,19 @@ router.get('/whole', function(req, res) {
 
 router.get('/pernode', function(req, res) {
   res.render('per-node');
+});
+
+router.get('/setcars', function(req, res) {
+  database.getCarsInGarage().then(function(cars) {
+    res.render('set-cars', {
+      current: cars,
+    });
+  });
+});
+
+router.get('/updateCarCount', function(req, res) {
+  database.setCarsInGarage(parseInt(req.query.cars));
+  res.redirect('/');
 });
 
 module.exports = router;

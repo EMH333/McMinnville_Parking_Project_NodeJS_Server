@@ -165,4 +165,41 @@ describe('basic database', function() {
     cars = await target.getCarsInGarage(false, time);
     expect(cars).to.be.equal(1);
   });
+
+  it('offsets', async function() {
+    time = target.getCurrentTime() - 2000;
+    await target.addCar(true, 0, time);// one car at time
+    await target.addCar(true, 0, time+100);// 2
+    await target.addCar(true, 0, time+200);// 3
+    await target.addCar(true, 0, time+300);// 4
+    await target.addCar(false, 0, time+400);// 3
+
+    // inital
+    let cars = await target.getCarsInGarage(false, time+2000);
+    expect(cars).to.be.equal(3);
+    let through = await target.getCarThroughput(time, 2000);
+    expect(through).to.be.equal(1);
+
+
+    // positive offset
+    await target.setCarsInGarage(4);
+    cars = await target.getCarsInGarage(false, time+2000);
+    expect(cars).to.be.equal(4);
+    through = await target.getCarThroughput(time, 2000);
+    expect(through).to.be.equal(1);
+
+    // negitive offset
+    await target.setCarsInGarage(2);
+    cars = await target.getCarsInGarage(false, time+2000);
+    expect(cars).to.be.equal(2);
+    through = await target.getCarThroughput(time, 2000);
+    expect(through).to.be.equal(1);
+
+    // crazy offset
+    await target.setCarsInGarage(200);
+    cars = await target.getCarsInGarage(false, time+2000);
+    expect(cars).to.be.equal(200);
+    through = await target.getCarThroughput(time, 2000);
+    expect(through).to.be.equal(1);
+  });
 });

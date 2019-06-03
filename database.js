@@ -8,6 +8,8 @@ let Gpio;
 let buffer; // buffer used for serial communication
 let gettingData = false;
 
+let offset = -333;
+
 
 const MAKE_CHECKPOINT_AT = 30; // events per checkpoint
 const MAX_CHECKPOINT_AGE = 1 * 60 * 60; // in seconds
@@ -181,6 +183,22 @@ async function addCar(isEntry, location, time) {
 }
 
 /**
+ * updates the number of cars currently in the garage
+ * @param {Number} num
+ */
+async function setCarsInGarage(num) {
+  await loadOffset();
+  const total = parseInt(num);
+  const off = total + offset - await getCarsInGarage();
+  offset = off;
+  collection.insert({
+    'time': time.getCurrentTime(),
+    'type': 'offset',
+    'offset': off,
+  });
+}
+
+/**
  * @param {boolean} ignoreCheckpoints when true the database counts from scratch
  * @param {number} pointInTime used to set the point in time to find the cars in the garage, is optional
  * @return {number}
@@ -243,7 +261,9 @@ async function getCarsInGarage(ignoreCheckpoints, pointInTime) {
     carsIn--;
   }
 
-  return checkpoint.totalCars + (carsIn - carsOut);
+  await loadOffset();
+
+  return checkpoint.totalCars + (carsIn - carsOut) + offset;
 }
 
 /**
@@ -385,6 +405,33 @@ function makeQuery(type, time, location) {
   });
 }
 
+/**
+ * Loads the offset from memory if needed
+ */
+async function loadOffset() {
+  // if offset is default value, get offset or just set it to zero
+  if (offset === -333) {
+    offset = await new Promise((resolve) => {
+      // get checkpoint that is relitivly current to insure any errors don't remain too long
+      collection.find({
+        type: 'offset',
+      }, {
+        'sort': [
+          ['time', 'desc'],
+        ],
+      }).nextObject(function(err, doc) {
+        if (doc != null) {
+          // if offset exists, deal with it
+          resolve(doc.offset);
+        } else {
+          // create a false offset of zero and deal with it
+          resolve(0);
+        }
+      });
+    });
+  }
+}
+
 module.exports = {
   addCar,
   getCarsInGarage,
@@ -395,4 +442,5 @@ module.exports = {
   getCarThroughput,
   getCarsUsingExit,
   setConfig,
+  setCarsInGarage,
 };

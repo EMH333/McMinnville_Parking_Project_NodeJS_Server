@@ -97,7 +97,7 @@ gulp.task('watcher', function() {
   gulp.watch(folder.src + 'shared/**/*.js', gulp.task('sharedjs'));
 
   // css changes
-  gulp.watch(folder.src + 'css/**/*', gulp.task('css'));
+  gulp.watch(folder.src + 'scss/**/*', gulp.task('css'));
 
   // image changes
   gulp.watch(folder.src + 'images/**/*', gulp.task('img'));
