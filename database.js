@@ -5,7 +5,7 @@ const db = new Db(config.databaseStorageLocation, {});
 let raspi;
 let Serial;
 let Gpio;
-let buffer;// buffer used for serial communication
+let buffer; // buffer used for serial communication
 let gettingData = false;
 
 
@@ -44,8 +44,8 @@ function initDatabaseAndListeners(database) {
         dataBits: 7,
       });
       // eslint-disable-next-line prefer-const
-      let output = new Gpio(17, 'out');// raw pin 17 also known as GPIO0 //see https://pinout.xyz
-      output.writeSync(0);// turn off to begin
+      let output = new Gpio(17, 'out'); // raw pin 17 also known as GPIO0 //see https://pinout.xyz
+      output.writeSync(0); // turn off to begin
       serial.open(() => {
         serial.on('data', (data) => {
           // process.stdout.write(data);
@@ -63,7 +63,7 @@ function initDatabaseAndListeners(database) {
             console.log('Got car going direction ' + process[0] + ' from node ' + process[2]);
 
             // actually add car to database
-            if (process[0]==='1') {
+            if (process[0] === '1') {
               addCar(true, parseInt(process[2]), time.getCurrentTime());
             } else {
               addCar(false, parseInt(process[2]), time.getCurrentTime());
@@ -86,7 +86,7 @@ function getCurrentTime() {
 }
 
 /**
- *
+ *@deprecated
  * @param {Number} minutes number of minutes in the past
  * @return {Number} the time since epoch x minutes ago
  */
@@ -96,6 +96,7 @@ function getEpochXMinutesAgo(minutes) {
 
 /**
  * Returns the duration of time in epoch
+ * @deprecated
  * @param {Number} minutes
  * @return {Number} epoch 'ticks' of x minutes
  */
@@ -117,7 +118,7 @@ Data model:
 {
     id: #auto,
     time: time from January 1st 1970 00:00. THIS IS DIFFERENT BECAUSE THIS WILL SIMPLIFY THINGS
-    type: "entry", "exit", "checkpoint" or "log"
+    type: "entry", "exit", "checkpoint", "offset" or "log"
 
     for entry and exit:
         location: #corasponds to the enterance or exit used
@@ -125,6 +126,9 @@ Data model:
         totalCars: #total number of cars at that point in time
     for log:
         message: #string message
+    for offset:
+        offset: #number of cars to offset by for all measurements. Designed to help set how many cars are in garage
+        # at one point in time
 }
 
 checkpoint data which contains current number of cars in garage at that time
@@ -159,14 +163,7 @@ async function addCar(isEntry, location, time) {
   // only create checkpoints when a car enters
   if (eventsBeforeCheckpoint <= 0 && isEntry) {
     // find checkpoints at the current time created previously
-    const previousCheckpointAtTime = await new Promise((resolve) => {
-      collection.find({
-        type: 'checkpoint',
-        time: time,
-      }).count(false, function(error, num) {
-        resolve(num);
-      });
-    });
+    const previousCheckpointAtTime = await makeQuery('checkpoint', time, '');
 
     // if a checkpoint with this time exists, then don't create a new one
     if (previousCheckpointAtTime < 0) {
@@ -196,7 +193,7 @@ async function getCarsInGarage(ignoreCheckpoints, pointInTime) {
     time: 0,
     totalCars: 0,
   };
-    // if ignoring checkpoints, create a dummy checkpoint
+  // if ignoring checkpoints, create a dummy checkpoint
   if (ignoreCheckpoints) {
     checkpoint = {
       time: 0,
@@ -231,28 +228,14 @@ async function getCarsInGarage(ignoreCheckpoints, pointInTime) {
     }); // gets checkpoint info
   }
 
-  let carsIn = await new Promise((resolve) => {
-    collection.find({
-      type: 'entry',
-      time: {
-        $gte: checkpoint.time,
-        $lte: pointInTime,
-      },
-    }).count(false, function(error, num) {
-      resolve(num);
-    });
-  }); // cars in resolves to the number of cars that went into the garage
-  const carsOut = await new Promise((resolve) => {
-    collection.find({
-      type: 'exit',
-      time: {
-        $gte: checkpoint.time,
-        $lte: pointInTime,
-      },
-    }).count(false, function(error, num) {
-      resolve(num);
-    });
-  }); // resolves to the number of cars that have exited the garage
+  let carsIn = await makeQuery('entry', {
+    $gte: checkpoint.time,
+    $lte: pointInTime,
+  }, null); // cars in resolves to the number of cars that went into the garage
+  const carsOut = await makeQuery('exit', {
+    $gte: checkpoint.time,
+    $lte: pointInTime,
+  }, null); // resolves to the number of cars that have exited the garage
 
   // we can assume we are using a checkpoint and thus should subtract one car from total
   // this prevents problems when multiple cars enter at the time a checkpoint is created
@@ -281,30 +264,15 @@ async function getCarThroughput(startTime, offset) {
     offset = time.getCurrentTime() - startTime;
   }
 
-  const carsIn = await new Promise((resolve) => {
-    collection.find({
-      type: 'entry',
-      time: {
-        $gte: startTime,
-        $lte: startTime + offset,
-      },
-    }).count(false, function(error, num) {
-      resolve(num);
-    });
-  });
+  const carsIn = await makeQuery('entry', {
+    $gte: startTime,
+    $lte: startTime + offset,
+  }, null);
 
-  const carsOut = await new Promise((resolve) => {
-    collection.find({
-      type: 'exit',
-      time: {
-        $gte: startTime,
-        $lte: startTime + offset,
-      },
-    }).count(false, function(error, num) {
-      resolve(num);
-    });
-  });
-
+  const carsOut = await makeQuery('exit', {
+    $gte: startTime,
+    $lte: startTime + offset,
+  }, null);
 
   const extraCars = carsIn - carsOut;
   return carsIn - extraCars;
@@ -336,50 +304,27 @@ async function getCarsUsingExit(startTime, offset, exitNumber, option) {
   switch (option) {
     // cars in
     case 0:
-      ret = await new Promise((resolve) => {
-        collection.find({
-          location: exitNumber,
-          type: 'entry',
-          time: {
-            $gte: startTime,
-            $lte: startTime + offset,
-          },
-        }).count(false, function(error, num) {
-          resolve(num);
-        });
-      });
+      ret = await makeQuery('entry', {
+        $gte: startTime,
+        $lte: startTime + offset,
+      }, exitNumber);
       break;
 
       // cars out
     case 1:
-      ret = await new Promise((resolve) => {
-        collection.find({
-          location: exitNumber,
-          type: 'exit',
-          time: {
-            $gte: startTime,
-            $lte: startTime + offset,
-          },
-        }).count(false, function(error, num) {
-          resolve(num);
-        });
-      });
+      ret = await makeQuery('exit', {
+        $gte: startTime,
+        $lte: startTime + offset,
+      }, exitNumber);
       break;
 
 
       // total cars
     case 2:
-      ret = await new Promise((resolve) => {
-        collection.find({
-          location: exitNumber,
-          time: {
-            $gte: startTime,
-            $lte: startTime + offset,
-          },
-        }).count(false, function(error, num) {
-          resolve(num);
-        });
-      });
+      ret = await makeQuery(null, {
+        $gte: startTime,
+        $lte: startTime + offset,
+      }, exitNumber);
       break;
 
     default:
@@ -394,6 +339,50 @@ async function getCarsUsingExit(startTime, offset, exitNumber, option) {
  */
 function setConfig(c) {
   config = c;
+}
+
+/**
+ * Makes query to database and returns number of results
+ * @param {*} type
+ * @param {*} time
+ * @param {Number} location
+ * @return {Promise} promise for answer to query
+ */
+function makeQuery(type, time, location) {
+  // a non typed query with location
+  if (type === null) {
+    return new Promise((resolve) => {
+      collection.find({
+        time: time,
+        location: location,
+      }).count(false, function(error, num) {
+        resolve(num);
+      });
+    });
+  }
+
+  // non location query
+  if (location === null) {
+    return new Promise((resolve) => {
+      collection.find({
+        type: type,
+        time: time,
+      }).count(false, function(error, num) {
+        resolve(num);
+      });
+    });
+  }
+
+  // default query
+  return new Promise((resolve) => {
+    collection.find({
+      type: type,
+      time: time,
+      location: location,
+    }).count(false, function(error, num) {
+      resolve(num);
+    });
+  });
 }
 
 module.exports = {
