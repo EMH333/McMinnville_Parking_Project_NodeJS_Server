@@ -22,6 +22,8 @@ jobs:
         npm install node-sass --only=dev
         npm install tingodb --only=dev
         npm install glob --only=dev
+        npm install fs --only=dev
+        npm install fs.realpath --only=dev
         npm install --only=dev
         npm test
       env:
