@@ -19,9 +19,9 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: npm install, and gulp build
       run: |
-        npm install node-sass -D
-        npm install tingodb -D
-        npm install -D
+        npm install node-sass --only=dev
+        npm install tingodb --only=dev
+        npm install --only=dev
         npm test
       env:
         CI: true
