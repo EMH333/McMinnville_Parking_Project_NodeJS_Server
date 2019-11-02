@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [10.x]
 
     steps:
     - uses: actions/checkout@v1
@@ -17,13 +17,10 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: npm install, build, and test
+    - name: npm install, and gulp build
       run: |
-        npm install glob --only=dev
-        npm install mkdirp@latest --only=dev
         npm install node-sass
         npm install -D
-        npm run build --if-present
-        npm test
+        npx gulp
       env:
         CI: true
